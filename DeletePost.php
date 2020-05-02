@@ -1,56 +1,38 @@
 <?php require_once("Includes/DB.php"); ?>
 <?php require_once("Includes/Functions.php"); ?>
 <?php require_once("Includes/Sessions.php"); ?>
-<?php
-$_SESSION["TrackingURL"]=$_SERVER["PHP_SELF"];
-
- Confirm_Login(); ?>
-
+<?php Confirm_Login(); ?>
 
 <?php
-if(isset($_POST["Submit"])){
-  $PostTitle = $_POST["PostTitle"];
-  $Category = $_POST["Category"];
-  $Image = $_FILES["Image"]["name"];
-  $PostText = $_POST["PostDescription"];
-  $Target = "Uploads/".basename($_FILES["Image"]["name"]);
-  $Admin = $_SESSION["UserName"];
-  date_default_timezone_set("Asia/Riyadh");
-  $CurrentTime=time();
-  $DateTime=strftime("%B-%d-%Y %H:%M:%S",$CurrentTime);
-
-
-  if(empty($PostTitle)){
-    $_SESSION["ErrorMessage"]= "يجب ملء جميع الحقول";
-    Redirect_to("ِِAddNewPost.php");
-  }elseif (strlen($PostTitle)<2) {
-    $_SESSION["ErrorMessage"]= "يجب أن يكون عنوان المقال أكثر من حرفين";
-    Redirect_to("ِAddNewPost.php");
-  }elseif (strlen($PostTitle)>1999) {
-    $_SESSION["ErrorMessage"]= "يجب أن يكون المقال أقل من 2000 حرف";
-    Redirect_to("AddNewPost.php");
-}else {
-  //Query to insert Post in DB when everything is fine
-  global $ConnectingDB;
-  $sql = "INSERT INTO posts(datetime,title,category,author,image,post)";
-  $sql .= "VALUES(:dateTime,:postTitle,:categoryName,:adminName,:imageName,:postDescription)";
-  $stmt = $ConnectingDB->prepare($sql);
-  $stmt->bindValue(':dateTime',$DateTime);
-  $stmt->bindValue(':postTitle',$PostTitle);
-  $stmt->bindValue(':categoryName',$Category);
-  $stmt->bindValue(':adminName',$Admin);
-  $stmt->bindValue(':imageName',$Image);
-  $stmt->bindValue(':postDescription',$PostText);
-  $Execute=$stmt->execute();
-  move_uploaded_file($_FILES["Image"]["tmp_name"],$Target);
-  if($Execute){
-    $_SESSION["SuccessMessage"]="تم إضافة المقال بنجاح";
-    Redirect_to("AddNewPost.php");
-  }else {
-    $_SESSION["ErrorMessage"]="لم تتم الإضافة. حاول مرة أخرى";
-    Redirect_to("AddNewPost.php");
-  }
+$SearchQueryParameter = $_GET['id'];
+//Fetching Existing Content according to our
+global $ConnectingDB;
+$sql = "SELECT * FROM posts WHERE id='$SearchQueryParameter'";
+$stmt = $ConnectingDB->query($sql);
+while ($DataRows=$stmt->fetch()) {
+  $TitleToBeDeleted = $DataRows['title'];
+  $CategoryToBeDeleted = $DataRows['category'];
+  $ImageToBeDeleted = $DataRows['image'];
+  $PostToBeDeleted = $DataRows['post'];
 }
+//echo $ImageToBeUpdated;
+if(isset($_POST["Submit"])){
+
+
+
+  //Query to delet Post in DB when everything is fine
+  global $ConnectingDB;
+  $sql = "DELETE FROM posts WHERE id='$SearchQueryParameter'";
+       $Execute =$ConnectingDB->query($sql);
+  if($Execute){
+    $Target_Path_To_DELETE_Image = "Uploads/$ImageToBeDeleted";
+    unlink($Target_Path_To_DELETE_Image);
+    $_SESSION["SuccessMessage"]="تم الحذف بنجاح";
+    Redirect_to("Posts.php");
+  }else {
+    $_SESSION["ErrorMessage"]="لم يتم الحذف";
+    Redirect_to("Posts.php");
+  }
 }  //Ending of Submit Button if_Condition
 
  ?>
@@ -63,7 +45,7 @@ if(isset($_POST["Submit"])){
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css" integrity="sha384-UHRtZLI+pbxtHCWp1t77Bi1L4ZtiqrqD80Kn4Z8NTSRyMA2Fd33n5dQ8lWUE00s/" crossorigin="anonymous">
       <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
       <link rel="stylesheet" href="Css/styles.css">
-    <title>التصنيفات</title>
+    <title>حذف المقال</title>
   </head>
   <body>
 <!-- NAVBAR -->
@@ -115,7 +97,7 @@ if(isset($_POST["Submit"])){
 <div class="container">
 <div class="row">
   <div class="col-md-12">
-    <h1><i class="fas fa-edit" style="color:#27aae1;"></i>أضف مقال جديد</h1>
+    <h1><i class="fas fa-edit" style="color:#27aae1;"></i>حذف المقال</h1>
 </div>
 </div>
 </div>
@@ -130,53 +112,40 @@ if(isset($_POST["Submit"])){
       echo ErrorMessage();
       echo SuccessMessage();
 
-
-
-
        ?>
-      <form class="" action="AddNewPost.php" method="post" enctype="multipart/form-data">
+      <form class="" action="DeletePost.php?id=<?php echo $SearchQueryParameter; ?>" method="post" enctype="multipart/form-data">
         <div class="card bg-secondary text-light mb-3">
 
            <div class="card-body bg-dark">
              <div class="form-group">
                <label for="title"><span class="FieldInfo">عنوان المقال: </span></label>
-               <input class="form-control" type="text" name="PostTitle" id="title" placeholder="إكتب العنوان" value=""></input>
+               <input disabled class="form-control" type="text" name="PostTitle" id="title" placeholder="إكتب العنوان" value="<?php echo $TitleToBeDeleted; ?>"></input>
              </div>
              <div class="form-group">
-               <label for="CategoryTitle"><span class="FieldInfo">اختر التصنيف: </span></label>
-               <select class="form-control" id="CategoryTitle" name="Category">
-                 <?php
-                 //Fetchinng all the categories from category table
-                 global $ConnectingDB;
-                 $sql = "SELECT id,title FROM category";
-                 $stmt = $ConnectingDB->query($sql);
-                 while ($DataRows = $stmt->fetch()) {
-                   $Id = $DataRows["id"];
-                   $CategoryName = $DataRows["title"];
-                  ?>
-                  <option> <?php echo $CategoryName; ?></option>
-                  <?php } ?>
+               <span class="FieldInfo"> التصنيف الحالي :</span>
+               <?php echo $CategoryToBeDeleted; ?>
+               <br>
 
-             </select>
              </div>
-             <div class="form-group mb-1">
-               <label for="imageSelect"> <span class="FieldInfo">قم يتحديد الصورة</span></label>
-                 <div class="custom-file">
-                   <input class="custom-file-input" type="File" name="Image" id="imageSelect"value="">
-                   <label for="imageSelect" class="custom-file-label">قم بتحديد الصورة</label>
-                 </div>
+             <div class="form-group">
+               <span class="FieldInfo"> الصورة الحالية :</span>
+               <img class="mb-1" src="Uploads/<?php echo $ImageToBeDeleted; ?>" width="170px"; height="70px"; >
+               <label for="imageSelect"><span class="FieldInfo"></span></label>
+
            </div>
            <div class="form-group">
              <label for="Post"><span class="FieldInfo">المقال :</span></label>
-             <textarea class="form-control" id="Post" name="PostDescription" rows="8" cols="80"></textarea>
+             <textarea disabled class="form-control" id="Post" name="PostDescription" rows="8" cols="80">
+               <?php echo $PostToBeDeleted; ?>
+             </textarea>
          </div>
              <div class="row">
                <div class="col-lg-6 mb-2">
                  <a href="Dashbord.php" class="btn btn-warning btn-block"><i class="fas fa-arrow-left"></i>العودة للصفحة الرئسية</a>
                </div>
                <div class="col-lg-6 mb-2">
-                 <button type="submit" name="Submit" class="btn btn-success btn-block">
-                   <i class="fas fa-check"></i>إضافة
+                 <button type="submit" name="Submit" class="btn btn-danger btn-block">
+                   <i class="fas fa-trash"></i>حذف
                  </button>
                </div>
            </div>

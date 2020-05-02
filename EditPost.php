@@ -1,8 +1,10 @@
 <?php require_once("Includes/DB.php"); ?>
 <?php require_once("Includes/Functions.php"); ?>
 <?php require_once("Includes/Sessions.php"); ?>
+<?php Confirm_Login(); ?>
+
 <?php
-$SarchQueryParameter = $_GET['id'];
+$SearchQueryParameter = $_GET['id'];
 if(isset($_POST["Submit"])){
   $PostTitle = $_POST["PostTitle"];
   $Category = $_POST["Category"];
@@ -30,11 +32,11 @@ if(isset($_POST["Submit"])){
   if (!empty($_FILES["Image"]["name"])) {
     $sql = "UPDATE posts
          SET title='$PostTitle', category='$Category', image='$Image', post='$PostText'
-         WHERE id='$SarchQueryParameter'";
+         WHERE id='$SearchQueryParameter'";
   }else {
     $sql = "UPDATE posts
          SET title='$PostTitle', category='$Category', post='$PostText'
-         WHERE id='$SarchQueryParameter'";
+         WHERE id='$SearchQueryParameter'";
   }
 
        $Execute =$ConnectingDB->query($sql);
@@ -127,7 +129,7 @@ if(isset($_POST["Submit"])){
       echo SuccessMessage();
       //Fetching Existing Content according to our
       global $ConnectingDB;
-      $sql = "SELECT * FROM posts WHERE id='$SarchQueryParameter'";
+      $sql = "SELECT * FROM posts WHERE id='$SearchQueryParameter'";
       $stmt = $ConnectingDB->query($sql);
       while ($DataRows=$stmt->fetch()) {
         $TitleToBeUpdated = $DataRows['title'];
@@ -140,7 +142,7 @@ if(isset($_POST["Submit"])){
 
 
        ?>
-      <form class="" action="EditPost.php?id=<?php echo $SarchQueryParameter; ?>" method="post" enctype="multipart/form-data">
+      <form class="" action="EditPost.php?id=<?php echo $SearchQueryParameter; ?>" method="post" enctype="multipart/form-data">
         <div class="card bg-secondary text-light mb-3">
 
            <div class="card-body bg-dark">
@@ -171,7 +173,7 @@ if(isset($_POST["Submit"])){
              </div>
              <div class="form-group mb-1">
                <span class="FieldInfo"> الصورة الحالية :</span>
-               <img class="mb-1" src="Uplodas/<?php echo $ImageToBeUpdated; ?>" width="170px"; height="70px"; >
+               <img class="mb-1" src="Uploads/<?php echo $ImageToBeUpdated; ?>" width="170px"; height="70px"; >
                <label for="imageSelect"> <span class="FieldInfo"></span></label>
                  <div class="custom-file">
                    <input class="custom-file-input" type="File" name="Image" id="imageSelect"value="">

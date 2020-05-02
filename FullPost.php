@@ -1,6 +1,46 @@
 <?php require_once("Includes/DB.php"); ?>
 <?php require_once("Includes/Functions.php"); ?>
 <?php require_once("Includes/Sessions.php"); ?>
+<?php $SearchQueryParameter = $_GET["id"]; ?>
+<?php
+if(isset($_POST["Submit"])){
+  $Name    = $_POST["CommenterName"];
+  $Email   = $_POST["CommenterEmail"];
+  $Comment = $_POST["CommenterThoughts"];
+  date_default_timezone_set("Asia/Karachi");
+  $CurrentTime=time();
+  $DateTime=strftime("%B-%d-%Y %H:%M:%S",$CurrentTime);
+
+  if(empty($Name)||empty($Email)||empty($Comment)){
+    $_SESSION["ErrorMessage"]= "يجب ملئ جميع الخانات";
+    Redirect_to("FullPost.php?id={$SearchQueryParameter}");
+  }elseif (strlen($Comment)>500) {
+    $_SESSION["ErrorMessage"]= "التعليق أكثر من 500 حرف";
+    Redirect_to("FullPost.php?id={$SearchQueryParameter}");
+  }else{
+    // Query to insert comment in DB When everything is fine
+    global $ConnectingDB;
+    $sql  = "INSERT INTO comments(datetime,name,email,comment,approvedby,status,post_id)";
+    $sql .= "VALUES(:dateTime,:name,:email,:comment,'Pending','OFF',:postIdFromURL)";
+    $stmt = $ConnectingDB->prepare($sql);
+    $stmt -> bindValue(':dateTime',$DateTime);
+    $stmt -> bindValue(':name',$Name);
+    $stmt -> bindValue(':email',$Email);
+    $stmt -> bindValue(':comment',$Comment);
+    $stmt -> bindValue(':postIdFromURL',$SearchQueryParameter);
+    $Execute = $stmt -> execute();
+    //var_dump($Execute);
+    if($Execute){
+      $_SESSION["SuccessMessage"]="تم إضافة التعليق بنجاح";
+      Redirect_to("FullPost.php?id={$SearchQueryParameter}");
+    }else {
+      $_SESSION["ErrorMessage"]="لم تتم إضافة التعليق , حاول مرة أخرى";
+      Redirect_to("FullPost.php?id={$SearchQueryParameter}");
+    }
+  }
+} //Ending of Submit Button If-Condition
+ ?>
+
 
 <!DOCTYPE html>
 <html lang="ar">
@@ -65,6 +105,10 @@
     <div class="col-sm-8 ">
       <h1>The Complete Responsive Ahmed Blog</h1>
       <h1 class="lead">The Complete blog by using PHP by Ahmed Zakan</h1>
+      <?php
+      echo ErrorMessage();
+      echo SuccessMessage();
+       ?>
          <?php
          global $ConnectingDB;
          if(isset($_GET["SearchButton"])){
@@ -104,15 +148,82 @@
             <img src="Uploads/<?php echo ($Image); ?>" style="max-height:450px;" class="img-fluid card-img-top" />
             <div class="card-body">
               <h4 class="card-title"><?php echo ($PostTitle); ?></h4>
-              <small class="text-muted">كتب من قبل <?php echo ($Admin); ?>في <?php echo ($DateTime); ?></small>
-              <span style="float:left;" class="badge badge-dark text-light">التعليقات</span>
+              <small class="text-muted">التصنيف:<span class="text-dark"> <a href="Blog.php?category=<?php echo$Category; ?>"> <?php echo $Category; ?> </a></span>كتب من قبل <?php echo $Admin; ?>في <?php echo $DateTime; ?></small>
+              <span style="float:left;" class="badge badge-dark text-light">التعليقات
+                 <?php  echo ApproveCommentsAccordingtoPost($PostId); ?>
+              </span>
               <hr>
               <p class="card-text"><?php echo ($PostDescription); ?></p>
 
 
             </div>
           </div>
+          <br>
 <?php } ?>
+
+<!-- Comment Part Start -->
+<!-- fetching existing comment Start -->
+<span class="FieldnInfo">التعليقات</span>
+<br></br>
+<?php
+global $ConnectingDB;
+$sql ="SELECT * FROM comments
+ WHERE post_id='$SearchQueryParameter' AND status='on'";
+$stmt =$ConnectingDB->query($sql);
+while ($DataRows = $stmt->fetch()) {
+  $CommentDate = $DataRows['datetime'];
+  $CommenterName = $DataRows['name'];
+  $CommentContent =$DataRows['comment'];
+
+ ?>
+
+ <div>
+   <div class="media CommentBlock">
+     <img class="d-block img-fluid align-self-Start" src="images/images.png" alt="">
+     <div class="media-body ml-2">
+       <h6 class="lead"><?php echo $CommenterName; ?></h6>
+       <p class="small"><?php echo $CommentDate; ?></p>
+       <p><?php echo $CommentContent; ?></p>
+     </div>
+   </div>
+ </div>
+ <br>
+<?php } ?>
+<div class="">
+  <form class="" action="FullPost.php?id=<?php echo $SearchQueryParameter ?>" method="post">
+    <div class="card mb-3">
+  <div class="card-header">
+      <h5 class="FieldInfo">شارك افكارك حول هذا المنشور</h5>
+    </div>
+    <div class="card-body">
+     <div class="form-group">
+       <div class="input-group">
+         <div class="input-group-prepend">
+           <span class="input-group-text"><i class="fas fa-user"></i></span>
+         </div>
+
+       <input class="form-control" type="text" name="CommenterName" placeholder="إسمك" value="">
+            </div>
+          </div>
+          <div class="form-group">
+            <div class="input-group">
+              <div class="input-group-prepend">
+                <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+              </div>
+
+            <input class="form-control" type="email" name="CommenterEmail" placeholder="الإيميل" value="">
+                 </div>
+               </div>
+               <div class="form-group">
+                 <textarea name="CommenterThoughts" class="form-control" rows="6" cols="80"></textarea>
+               </div>
+               <div class="">
+                 <button type="submit" name="Submit" class="btn btn-primary">إرسال</button>
+               </div>
+     </div>
+    </div>
+  </form>
+</div>
     </div>
     <!-- Main Area End-->
 

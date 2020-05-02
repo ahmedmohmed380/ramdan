@@ -13,7 +13,7 @@ Confirm_Login(); ?>
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css" integrity="sha384-UHRtZLI+pbxtHCWp1t77Bi1L4ZtiqrqD80Kn4Z8NTSRyMA2Fd33n5dQ8lWUE00s/" crossorigin="anonymous">
       <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
       <link rel="stylesheet" href="Css/styles.css">
-    <title>المقلات</title>
+    <title>لوحة التحكم</title>
   </head>
   <body>
     <div align=right dir=rtl>
@@ -64,7 +64,7 @@ Confirm_Login(); ?>
 <div class="container">
 <div class="row">
   <div class="col-md-12">
-    <h1><i class="fas fa-blog" style="color:#27aae1;"></i>المقالات</h1>
+    <h1><i class="fas fa-cog" style="color:#27aae1;"></i>لوحة التحكم</h1>
 </div>
 <div class="col-lg-3 mb-2">
   <a href="AddNewPost.php" class="btn btn-primary btn-block">
@@ -93,100 +93,117 @@ Confirm_Login(); ?>
 <!-- Main Area -->
 <section class="container py-2 mb-4">
   <div class="row">
-    <div class="col-lg-12">
-      <?php
-      echo ErrorMessage();
-      echo SuccessMessage();
+    <?php
+    echo ErrorMessage();
+    echo SuccessMessage();
+     ?>
+     <!-- left side Area Start -->
 
-       ?>
-      <table class="table table-striped table-hover">
-        <thead class="thead-dark">
-      <tr>
-        <th>#</th>
-        <th>العنوان</th>
-        <th>التصنيف</th>
-        <th>الوقت</th>
-        <th>المستخدم</th>
-        <th>الصورة</th>
-        <th>التعليقات</th>
-        <th>التحرير</th>
-        <th>معاينة</th>
-      </tr>
-    </thead>
-      <?php
-           global $ConnectingDB;
-           $sql = "SELECT * FROM posts";
-           $stmt = $ConnectingDB->query($sql);
-           $Sr = 0;
-           while ($DataRows = $stmt->fetch()) {
-             $Id = $DataRows["id"];
-             $DateTime = $DataRows["datetime"];
-             $PostTitle = $DataRows["title"];
-             $Category = $DataRows["category"];
-             $Admin = $DataRows["author"];
-             $Image = $DataRows["image"];
-             $PostText = $DataRows["post"];
-             $Sr++;
-       ?>
-       <tbody>
-       <tr>
-         <td><?php echo $Sr; ?></td>
-         <td>
-           <?php
-             if (strlen($PostTitle)>20){$PostTitle= substr($PostTitle,0,18).'..';}
-            echo $PostTitle;
-            ?>
-          </td>
-         <td>
-           <?php
-           if (strlen($Category)>10){$Category= substr($Category,0,10).'..';}
-            echo $Category;
-             ?>
-           </td>
-         <td>
-           <?php
-           if (strlen($DateTime)>11){$DateTime= substr($DateTime,0,11).'..';}
-            echo $DateTime;
-             ?>
-           </td>
-         <td>
-           <?php
-           if (strlen($Admin)>8){$Admin= substr($Admin,0,8).'..';}
-            echo $Admin;
-            ?>
-          </td>
-         <td><img src="Uploads/<?php echo $Image; ?>" width="170px;" height="50px;"</td>
-         <td>
-           <?php
-              $Total=ApproveCommentsAccordingtoPost($Id);
-            if ($Total>0) {
-           ?>
-           <span class="badge badge-success">
-             <?php
-             echo $Total; ?>
-           </span>
-         <?php } ?>
-         <?php
-         $Total=DisApproveCommentsAccordingtoPost($Id);
-          if ($Total>0) {
-         ?>
-         <span class="badge badge-danger">
-           <?php
-           echo $Total; ?>
-         </span>
-       <?php } ?>
+    <div class="col-lg-2 d-none d-md-block">
+    <div class="card text-center bg-dark text-white mb-3">
+     <div class="card-body">
+       <h1 class="lead">المقالات</h1>
+       <h4 class="display-5"></h4>
+       <i class="fab fa-readme"></i>
 
-         </td>
-         <td>
-           <a href="EditPost.php?id=<?php echo $Id; ?>"><span class="btn btn-warning">التعديل</span></a>
-           <a href="DeletePost.php?id=<?php echo $Id; ?>"><span class="btn btn-danger">الحذف</span></a>
-         </td>
-         <td><a href="FullPost.php?id=<?php echo $Id; ?>" target="_blank"><span class="btn btn-primary">المعاينة</span></a></td>
-       </tr>
-     </tbody>
-       <?php } ?>
-     </table>
+    <?php TotalPosts(); ?>
+
+     </div>
     </div>
+    <div class="card text-center bg-dark text-white mb-3">
+     <div class="card-body">
+       <h1 class="lead">التصنيفات</h1>
+       <h4 class="display-5"></h4>
+       <i class="fas fa-folder"></i>
+       <?php
+      TotalCategories();
+        ?>
+     </div>
+    </div>
+    <div class="card text-center bg-dark text-white mb-3">
+     <div class="card-body">
+       <h1 class="lead">المستخدمون</h1>
+       <h4 class="display-5"></h4>
+       <i class="fas fa-users"></i>
+       <?php TotalAdmins();  ?>
+     </div>
+    </div>
+    <div class="card text-center bg-dark text-white mb-3">
+     <div class="card-body">
+       <h1 class="lead">التعليقات</h1>
+       <h4 class="display-5"></h4>
+       <i class="fas fa-comments"></i>
+       <?php TotalComments()  ?>
+     </div>
+    </div>
+    </div>
+    <!-- left side Area End -->
+    <!-- ٌright side Area Start -->
+     <div class="col-lg-10">
+       <h1>أفضل المنشورات</h1>
+       <table class="table table-striped table-hover">
+         <thead class="thead-dark">
+           <tr>
+             <th>الرقم</th>
+             <th>العنوان</th>
+             <th>الوقت</th>
+             <th>الناشر</th>
+             <th>التعليقات</th>
+             <th>معلومات</th>
+           </tr>
+         </thead>
+         <?php
+         $SrNo = 0;
+           global $ConnectingDB;
+           $sql = "SELECT * FROM posts ORDER BY id desc LIMIT 0,5";
+           $stmt = $ConnectingDB->query($sql);
+           while ($DataRows=$stmt->fetch()) {
+             $PostId =$DataRows["id"];
+             $DateTime =$DataRows["datetime"];
+             $Author =$DataRows["author"];
+             $Title =$DataRows["title"];
+             $SrNo++;
+
+          ?>
+          <tbody>
+            <tr>
+              <td><?php echo $SrNo; ?></td>
+              <td><?php echo $Title; ?></td>
+              <td><?php echo $DateTime; ?></td>
+              <td><?php echo $Author; ?></td>
+              <td>
+                <?php
+                   $Total=ApproveCommentsAccordingtoPost($PostId);
+                 if ($Total>0) {
+                ?>
+                <span class="badge badge-success">
+                  <?php
+                  echo $Total; ?>
+                </span>
+              <?php } ?>
+              <?php
+              $Total=DisApproveCommentsAccordingtoPost($PostId);
+               if ($Total>0) {
+              ?>
+              <span class="badge badge-danger">
+                <?php
+                echo $Total; ?>
+              </span>
+            <?php } ?>
+
+              </td>
+               <td><a target="_Blank" href="FullPost.php?id=<?php echo $PostId; ?>">
+                <span class="btn btn-info">معاينة</span>
+               </td>
+            </tr>
+          </tbody>
+          <?php } ?>
+       </table>
+     </div>
+
+    <!-- ٌright side Area End -->
+
+
   </div>
 </section>
 <!-- FOOTER -->

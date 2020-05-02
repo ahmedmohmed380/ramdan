@@ -9,46 +9,46 @@ $_SESSION["TrackingURL"]=$_SERVER["PHP_SELF"];
 
 <?php
 if(isset($_POST["Submit"])){
-  $PostTitle = $_POST["PostTitle"];
-  $Category = $_POST["Category"];
-  $Image = $_FILES["Image"]["name"];
-  $PostText = $_POST["PostDescription"];
-  $Target = "Uploads/".basename($_FILES["Image"]["name"]);
+  $UserName = $_POST["Username"];
+  $Name = $_POST["Name"];
+  $Password = $_POST["Password"];
+  $ConfirmPassword = $_POST["ConfirmPassword"];
   $Admin = $_SESSION["UserName"];
   date_default_timezone_set("Asia/Riyadh");
   $CurrentTime=time();
   $DateTime=strftime("%B-%d-%Y %H:%M:%S",$CurrentTime);
 
 
-  if(empty($PostTitle)){
-    $_SESSION["ErrorMessage"]= "يجب ملء جميع الحقول";
-    Redirect_to("ِِAddNewPost.php");
-  }elseif (strlen($PostTitle)<2) {
-    $_SESSION["ErrorMessage"]= "يجب أن يكون عنوان المقال أكثر من حرفين";
-    Redirect_to("ِAddNewPost.php");
-  }elseif (strlen($PostTitle)>1999) {
-    $_SESSION["ErrorMessage"]= "يجب أن يكون المقال أقل من 2000 حرف";
-    Redirect_to("AddNewPost.php");
-}else {
-  //Query to insert Post in DB when everything is fine
+  if(empty($UserName)||empty($Password)||empty($ConfirmPassword)){
+    $_SESSION["ErrorMessage"]= "يجب تعبئة جميع الخانات";
+    Redirect_to("Admins.php");
+  }elseif (strlen($Password)<4) {
+    $_SESSION["ErrorMessage"]= "كلمة المرور يجب أن تكون أكثر من ثلاث خانات";
+    Redirect_to("Admins.php");
+  }elseif ($Password !== $ConfirmPassword) {
+    $_SESSION["ErrorMessage"]= "تأكيد كلمة المرور وكلمة المرور غير متطابقتين";
+    Redirect_to("Admins.php");
+  }elseif (CheckUserNameExistsOrNot($UserName)) {
+    $_SESSION["ErrorMessage"]= "إسم المستخدم موجود !";
+    Redirect_to("Admins.php");
+  }else{
+  //Query to insert new admin in DB when everything is fine
   global $ConnectingDB;
-  $sql = "INSERT INTO posts(datetime,title,category,author,image,post)";
-  $sql .= "VALUES(:dateTime,:postTitle,:categoryName,:adminName,:imageName,:postDescription)";
+  $sql = "INSERT INTO admins(datetime,username,password,aname,addedby)";
+  $sql .= "VALUES(:dateTime,:userName,:password,:aName,:adminName)";
   $stmt = $ConnectingDB->prepare($sql);
   $stmt->bindValue(':dateTime',$DateTime);
-  $stmt->bindValue(':postTitle',$PostTitle);
-  $stmt->bindValue(':categoryName',$Category);
+  $stmt->bindValue(':userName',$UserName);
+  $stmt->bindValue(':password',$Password);
+  $stmt->bindValue(':aName',$Name);
   $stmt->bindValue(':adminName',$Admin);
-  $stmt->bindValue(':imageName',$Image);
-  $stmt->bindValue(':postDescription',$PostText);
   $Execute=$stmt->execute();
-  move_uploaded_file($_FILES["Image"]["tmp_name"],$Target);
   if($Execute){
-    $_SESSION["SuccessMessage"]="تم إضافة المقال بنجاح";
-    Redirect_to("AddNewPost.php");
+    $_SESSION["SuccessMessage"]="تم إضافة المستخدم ".$Name." ";
+    Redirect_to("Admins.php");
   }else {
     $_SESSION["ErrorMessage"]="لم تتم الإضافة. حاول مرة أخرى";
-    Redirect_to("AddNewPost.php");
+    Redirect_to("Admins.php");
   }
 }
 }  //Ending of Submit Button if_Condition
@@ -63,7 +63,7 @@ if(isset($_POST["Submit"])){
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css" integrity="sha384-UHRtZLI+pbxtHCWp1t77Bi1L4ZtiqrqD80Kn4Z8NTSRyMA2Fd33n5dQ8lWUE00s/" crossorigin="anonymous">
       <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
       <link rel="stylesheet" href="Css/styles.css">
-    <title>التصنيفات</title>
+    <title>المشرفين</title>
   </head>
   <body>
 <!-- NAVBAR -->
@@ -115,7 +115,7 @@ if(isset($_POST["Submit"])){
 <div class="container">
 <div class="row">
   <div class="col-md-12">
-    <h1><i class="fas fa-edit" style="color:#27aae1;"></i>أضف مقال جديد</h1>
+    <h1><i class="fas fa-user" style="color:#27aae1;"></i>إدارةالمشرفين</h1>
 </div>
 </div>
 </div>
@@ -134,42 +134,29 @@ if(isset($_POST["Submit"])){
 
 
        ?>
-      <form class="" action="AddNewPost.php" method="post" enctype="multipart/form-data">
+      <form class="" action="Admins.php" method="post">
         <div class="card bg-secondary text-light mb-3">
-
+           <div class="card-header">
+             <h1>أضف مستخدم جديد</h1>
+           </div>
            <div class="card-body bg-dark">
              <div class="form-group">
-               <label for="title"><span class="FieldInfo">عنوان المقال: </span></label>
-               <input class="form-control" type="text" name="PostTitle" id="title" placeholder="إكتب العنوان" value=""></input>
+               <label for="username"><span class="FieldInfo">إسم المستخدم </span></label>
+               <input class="form-control" type="text" name="Username" id="username"value=""></input>
              </div>
              <div class="form-group">
-               <label for="CategoryTitle"><span class="FieldInfo">اختر التصنيف: </span></label>
-               <select class="form-control" id="CategoryTitle" name="Category">
-                 <?php
-                 //Fetchinng all the categories from category table
-                 global $ConnectingDB;
-                 $sql = "SELECT id,title FROM category";
-                 $stmt = $ConnectingDB->query($sql);
-                 while ($DataRows = $stmt->fetch()) {
-                   $Id = $DataRows["id"];
-                   $CategoryName = $DataRows["title"];
-                  ?>
-                  <option> <?php echo $CategoryName; ?></option>
-                  <?php } ?>
-
-             </select>
+               <label for="Name"><span class="FieldInfo">الأسم </span></label>
+               <input class="form-control" type="text" name="Name" id="Name"value=""></input>
+               <small class="text-warning text-muted">إختياري</small>
              </div>
-             <div class="form-group mb-1">
-               <label for="imageSelect"> <span class="FieldInfo">قم يتحديد الصورة</span></label>
-                 <div class="custom-file">
-                   <input class="custom-file-input" type="File" name="Image" id="imageSelect"value="">
-                   <label for="imageSelect" class="custom-file-label">قم بتحديد الصورة</label>
-                 </div>
-           </div>
-           <div class="form-group">
-             <label for="Post"><span class="FieldInfo">المقال :</span></label>
-             <textarea class="form-control" id="Post" name="PostDescription" rows="8" cols="80"></textarea>
-         </div>
+             <div class="form-group">
+               <label for="Password"><span class="FieldInfo">كلمة المرور </span></label>
+               <input class="form-control" type="Password" name="Password" id="Password"value=""></input>
+             </div>
+             <div class="form-group">
+               <label for="ConfirmPassword"><span class="FieldInfo">تأكيد كلمة المرور </span></label>
+               <input class="form-control" type="password" name="ConfirmPassword" id="ConfirmPassword" value=""></input>
+             </div>
              <div class="row">
                <div class="col-lg-6 mb-2">
                  <a href="Dashbord.php" class="btn btn-warning btn-block"><i class="fas fa-arrow-left"></i>العودة للصفحة الرئسية</a>
@@ -183,6 +170,43 @@ if(isset($_POST["Submit"])){
            </div>
         </div>
       </form>
+      <h2>جميع المستخدمين</h2>
+      <table class="table table-stri-striped table-hover">
+        <thead class="thead-dark">
+          <tr>
+            <th>الرقم</th>
+            <th>الوقت</th>
+            <th>إسم المستخدم</th>
+            <th>الإسم</th>
+            <th>أضيف من قبل</th>
+            <th>حذف</th>
+          </tr>
+        </thead>
+      <?php
+       global $ConnectingDB;
+       $sql = "SELECT * FROM admins ORDER BY id desc";
+       $Execute =$ConnectingDB->query($sql);
+       $SrNo = 0;
+       while ($DateRows=$Execute->fetch()) {
+         $AdminId = $DateRows["id"];
+         $DateTime = $DateRows["datetime"];
+         $AdminUsername = $DateRows["username"];
+         $AdminName = $DateRows["aname"];
+         $AddedBy = $DateRows["addedby"];
+         $SrNo++;
+             ?>
+       <tbody>
+         <tr>
+           <td><?php echo $SrNo; ?></td>
+            <td><?php echo $DateTime; ?></td>
+           <td><?php echo $AdminUsername; ?></td>
+           <td><?php echo $AdminName; ?></td>
+           <td><?php echo $AddedBy; ?></td>
+           <td><a href="DeleteAdmin.php?id=<?php echo $AdminId;?>" class="btn btn-danger">حذف</a></td>
+         </tr>
+       </tbody>
+       <?php } ?>
+         </table>
   </div>
 </div>
 

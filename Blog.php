@@ -85,26 +85,45 @@
          }
 
          // The defult SQL qurey
-          else{
-            $sql = "SELECT * FROM posts ORDER BY id desc";
-            $stmt = $ConnectingDB->query($sql);
-            }
-          while ($DataRows = $stmt->fetch()) {
-          $PostId = $DataRows["id"];
-          $DateTime = $DataRows["datetime"];
-          $PostTitle = $DataRows["title"];
-          $Category = $DataRows["category"];
-          $Admin = $DataRows["author"];
-          $Image = $DataRows["image"];
-          $PostDescription = $DataRows["post"];
+         elseif (isset($_GET["page"])) {
+           $Page = $_GET["page"];
+           if($Page==0||$Page<1){
+           $ShowPostFrom=0;
+         }else{
+           $ShowPostFrom=($Page*5)-5;
+         }
+           $sql ="SELECT * FROM posts ORDER BY id desc LIMIT $ShowPostFrom,5";
+           $stmt=$ConnectingDB->query($sql);
+         }
+         // Query When Category is active in URL Tab
+         elseif (isset($_GET["category"])) {
+           $Category = $_GET["category"];
+           $sql = "SELECT * FROM posts WHERE category='$Category' ORDER BY id desc";
+           $stmt=$ConnectingDB->query($sql);
+         }
 
-            ?>
+         // The default SQL query
+         else{
+           $sql  = "SELECT * FROM posts ORDER BY id desc LIMIT 0,3";
+           $stmt =$ConnectingDB->query($sql);
+         }
+         while ($DataRows = $stmt->fetch()) {
+           $PostId          = $DataRows["id"];
+           $DateTime        = $DataRows["datetime"];
+           $PostTitle       = $DataRows["title"];
+           $Category        = $DataRows["category"];
+           $Admin           = $DataRows["author"];
+           $Image           = $DataRows["image"];
+           $PostDescription = $DataRows["post"];
+         ?>
           <div class="card">
-            <img src="Uploads/<?php echo s($Image); ?>" style="max-height:450px;" class="img-fluid card-img-top" />
+            <img src="Uploads/<?php echo $Image; ?>" style="max-height:450px;" class="img-fluid card-img-top" />
             <div class="card-body">
-              <h4 class="card-title"><?php echo ($PostTitle); ?></h4>
-              <small class="text-muted">كتب من قبل <?php echo ($Admin); ?>في <?php echo ($DateTime); ?></small>
-              <span style="float:left;" class="badge badge-dark text-light">التعليقات</span>
+              <h4 class="card-title"><?php echo $PostTitle; ?></h4>
+              <small class="text-muted">التصنيف:<span class="text-dark"> <a href="Blog.php?category=<?php echo$Category; ?>"> <?php echo $Category; ?> </a></span>كتب من قبل <?php echo $Admin; ?>في <?php echo $DateTime; ?></small>
+              <span style="float:left;" class="badge badge-dark text-light">التعليقات
+                 <?php  echo ApproveCommentsAccordingtoPost($PostId); ?>
+              </span>
               <hr>
               <p class="card-text">
                 <?php if (strlen($PostDescription)>150) {
@@ -117,9 +136,49 @@
             </div>
           </div>
 <?php } ?>
+<nav>
+  <ul class="pagination pagination-md">
+    <!-- Creating Backward Button -->
+    <?php if( isset($Page) ) {
+      if ( $Page>1 ) {?>
+   <li class="page-item">
+       <a href="Blog.php?page=<?php  echo $Page-1; ?>" class="page-link">&laquo;</a>
+     </li>
+   <?php } }?>
+  <?php
+  global $ConnectingDB;
+  $sql           = "SELECT COUNT(*) FROM posts";
+  $stmt          = $ConnectingDB->query($sql);
+  $RowPagination = $stmt->fetch();
+  $TotalPosts    = array_shift($RowPagination);
+  // echo $TotalPosts."<br>";
+  $PostPagination=$TotalPosts/5;
+  $PostPagination=ceil($PostPagination);
+  // echo $PostPagination;
+  for ($i=1; $i <=$PostPagination ; $i++) {
+    if( isset($Page) ){
+      if ($i == $Page) {  ?>
+    <li class="page-item active">
+      <a href="Blog.php?page=<?php  echo $i; ?>" class="page-link"><?php  echo $i; ?></a>
+    </li>
+    <?php
+  }else {
+    ?>  <li class="page-item">
+        <a href="Blog.php?page=<?php  echo $i; ?>" class="page-link"><?php  echo $i; ?></a>
+      </li>
+  <?php  }
+} } ?>
+<!-- Creating Forward Button -->
+<?php if ( isset($Page) && !empty($Page) ) {
+  if ($Page+1 <= $PostPagination) {?>
+<li class="page-item">
+   <a href="Blog.php?page=<?php  echo $Page+1; ?>" class="page-link">&raquo;</a>
+ </li>
+<?php } }?>
+  </ul>
+</nav>
     </div>
     <!-- Main Area End-->
-
 
 
 
@@ -133,6 +192,7 @@
 
   </div>
 </div>
+
 <!-- FOOTER -->
 <footer class="bg-dark text-white">
   <div class="container">
